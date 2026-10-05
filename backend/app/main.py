@@ -37,15 +37,28 @@ from fastapi.responses import FileResponse
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 # Mount frontend static distribution if built
-frontend_dist_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "frontend", "dist")
-if not os.path.exists(frontend_dist_dir):
-    frontend_dist_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+candidate_paths = [
+    os.path.abspath(os.path.join("frontend", "dist")),
+    os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "frontend", "dist")),
+    os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "dist")),
+    os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static")),
+]
 
-if os.path.exists(frontend_dist_dir):
-    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist_dir, "assets")), name="assets")
+frontend_dist_dir = None
+for path in candidate_paths:
+    if os.path.exists(path) and os.path.isdir(path):
+        frontend_dist_dir = path
+        break
+
+if frontend_dist_dir:
+    assets_dir = os.path.join(frontend_dist_dir, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
     @app.get("/{full_path:path}")
     def serve_spa(full_path: str):
+        if full_path.startswith("api/"):
+            return None
         file_path = os.path.join(frontend_dist_dir, full_path)
         if os.path.isfile(file_path):
             return FileResponse(file_path)
@@ -60,4 +73,5 @@ else:
             "gateway": "CivicFix Demo Civic API — Simulation Only",
             "docs_url": "/docs"
         }
+
 
