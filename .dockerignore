@@ -1,0 +1,9 @@
+.git
+.gitignore
+README.md
+backend/venv
+backend/__pycache__
+backend/.pytest_cache
+backend/*.db
+frontend/node_modules
+frontend/dist
